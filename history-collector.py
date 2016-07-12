@@ -52,6 +52,8 @@ class HistoryData(object):
       else:
         old = self._all_data[line]
         self._all_data[line] = { 'score': 1.0 + old['score'] * _decay**(self._params['t']-old['t']), 't': self._params['t'] }
+    if data:
+      return (self._all_data[data[-1]]['t'], data[-1])
 
   def DeleteData(self, indices):
     indices = set(indices)
@@ -81,7 +83,7 @@ class HistoryData(object):
       print >> sys.stderr, 'Error: %s' % e
 
 
-all_modes = []
+all_modes = ['last']
 
 def RegisterMode(func):
   global all_modes
@@ -92,9 +94,17 @@ class CommandProcessor(object):
 
   def __init__(self, *args, **kwds):
     self._history_data = HistoryData(*args, **kwds)
+    self._last_cache = {}
 
-  def Execute(self, mode, conn):
-    return getattr(self, mode)(conn)
+  def Execute(self, header, mode, conn):
+    if mode == 'last':
+      # last is a special mode.
+      if header in self._last_cache:
+        print >> conn, '%s %s' % self._last_cache[header]
+    else:
+      update = getattr(self, mode)(conn)
+      if update:
+        self._last_cache[header] = update
 
   @RegisterMode
   def read(self, conn):
@@ -107,7 +117,7 @@ class CommandProcessor(object):
 
   @RegisterMode
   def write(self, conn):
-    self._history_data.AppendData(GetLinesHelper(conn))
+    return self._history_data.AppendData(GetLinesHelper(conn))
 
   @RegisterMode
   def delete(self, conn):
@@ -116,6 +126,7 @@ class CommandProcessor(object):
     except ValueError as e:
       print >> sys.stderr, 'Error: %s' % e
     self._history_data.DeleteData(indices)
+    return ('', '')
 
   @RegisterMode
   def save(self, conn=None):
@@ -162,7 +173,7 @@ def HandleConnection(command_processor):
     mode = ReadlineHelper(conn).strip()
     print >> sys.stderr, 'Executing %s: %s' % (mode, header)
     try:
-      command_processor.Execute(mode, conn)
+      command_processor.Execute(header, mode, conn)
       print >> conn, _termination_line
     except Exception as e:
       print >> sys.stderr, 'Error: %s' % e
@@ -245,7 +256,7 @@ def RunCLI(mode):
     socket_obj.connect(_socket_name)
     conn = socket_obj.makefile('a+')
     try:
-      print >> conn, os.getpid()
+      print >> conn, os.ttyname(2)
       print >> conn, mode
       conn.flush()
       for line in cached_lines:

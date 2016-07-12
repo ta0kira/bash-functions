@@ -36,6 +36,10 @@ _clean_history() {
   fi
 }
 
+_last_line() {
+  _clean_history | tail -1
+}
+
 _delete_history() {
   for l in $lines; do
     history -d $l || break
@@ -320,7 +324,7 @@ oops() {
   local unset IFS
   history -d $((HISTCMD-1))
   if [ ! "$1" ]; then
-    read -r _cmd_num line < <(_clean_history | tail -1)
+    read -r _cmd_num line < <(_last_line)
     #(remove current command upon [Ctrl]+C)
     trap '_delete_history $_cmd_num; trap SIGINT; return' SIGINT
     line2=$(_read_line 'edit: ' "$line")
@@ -409,6 +413,11 @@ use_history_collector() {
   #override from above
   _delete_history() {
     printf '%s\n' "$@" | "$HISTORY_COLLECTOR" --mode=delete
+  }
+
+  #override from above
+  _last_line() {
+    "$HISTORY_COLLECTOR" --mode=last < /dev/null
   }
 
   _write_history() {
