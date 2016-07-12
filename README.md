@@ -276,47 +276,4 @@ ls: cannot access fake: No such file or directory
 bash$ mute ls fake
 ```
 
-## Shell Scripts
-
-To use, copy the scripts from `bin` to somewhere in your `$PATH`.
-
-#### Rename Files With a Pattern: [`useful-rename.sh`](useful-rename.sh "Rename Script") *`[from regex]`* *`[to regex]`* *`(files...)`*
-Rename `(files...)` by transforming filenames *(with paths)* using `sed`-like
-replacement. **The script will refuse to rename any files if there are any
-collisions among the source and destination files.** Prefix with `RENAME_ARGS=`
-to supply additional arguments to the rename command. Missing destination paths
-*will not* be created.
-
-```bash
-bash$ touch {a,b,c}.txt
-bash$ useful-rename.sh '\.' '1.' *.txt
-mv -fv a.txt a1.txt
-'a.txt' -> 'a1.txt'
-mv -fv b.txt b1.txt
-'b.txt' -> 'b1.txt'
-mv -fv c.txt c1.txt
-'c.txt' -> 'c1.txt'
-```
-
-#### Copy Files With a Pattern: [`useful-copy.sh`](useful-copy.sh "Copy Script") ...
-Same as `useful-rename.sh`, but creates copies instead. (You can just create a
-symlink to `useful-rename.sh` named `useful-copy.sh`.)
-
-#### Symlink Files With a Pattern: [`useful-link.sh`](useful-link.sh "Link Script") ...
-Same as `useful-rename.sh`, but creates symlinks instead. (You can just create a
-symlink to `useful-rename.sh` named `useful-link.sh`.)
-
-#### Custom Rename Command With a Pattern: `RENAME_CMD='...'` `useful-rename.sh` ...
-Replace the rename command used by `useful-rename.sh`. This is useful if you
-want the same pattern transformation and error checking with some other command.
-
-```bash
-bash$ mkdir temp
-bash$ touch temp/{a,b,c}.txt
-bash$ RENAME_CMD='install -D -m0644' useful-rename.sh 'temp/(.+)$' 'temp2/\1~' temp/*.txt
-install -D -m0644 temp/a.txt temp2/a.txt~
-install -D -m0644 temp/b.txt temp2/b.txt~
-install -D -m0644 temp/c.txt temp2/c.txt~
-```
-
   [1]: mailto:kevinbarry@google.com
