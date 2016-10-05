@@ -238,7 +238,10 @@ def RunDaemon():
       signal.signal(getattr(signal, sig), signal.SIG_IGN)
     # Setup.
     CreateSocket()
-    command_processor.restore()
+    try:
+      command_processor.restore()
+    except ValueError:
+      pass
     _save_on_exit = command_processor.save
     # Process input.
     while True:

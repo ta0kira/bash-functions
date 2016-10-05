@@ -370,12 +370,24 @@ mute() {
 
 #shared history, added 20160617
 
+_check_history_commands() {
+  if [ ! -x "$HISTORY_COLLECTOR" ]; then
+    echo "$HISTORY_COLLECTOR is not executable." 1>&2
+    return 1
+  fi
+  if [ ! -x "$(which daemon)" ]; then
+    echo "daemon command is not executable." 1>&2
+    return 1
+  fi
+}
+
 _start_history_daemon() {
   if [ -z "$HISTORY_COLLECTOR" ]; then
     echo "History Collector not configured; call use_common_history." 1>&2
     return 1
   fi
-  daemon -F "$HOME/.history-collector.pid" -- "$HOME/bin/history-collector.py" --mode=daemon
+  _check_history_commands || return 1
+  daemon -F "$HOME/.history-collector.pid" -- "$HISTORY_COLLECTOR" --mode=daemon
   while ! [ -S "$HOME/.hc_ipc" ]; do
     echo -en 'Waiting for history-collector.py...\r' 1>&2
     sleep 1
@@ -385,10 +397,7 @@ _start_history_daemon() {
 use_history_collector() {
   HISTORY_COLLECTOR=$1
   [ "$HISTORY_COLLECTOR" ] || HISTORY_COLLECTOR="$HOME/bin/history-collector.py"
-  if [ ! -x "$HISTORY_COLLECTOR" ]; then
-    echo "$HISTORY_COLLECTOR is not executable." 1>&2
-    return 1
-  fi
+  _check_history_commands || return 1
   for command in '_start_history_daemon' '_write_history'; do
     echo "$PROMPT_COMMAND" | fgrep -q "$command" || PROMPT_COMMAND+="$command;"
   done
