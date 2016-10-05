@@ -132,6 +132,9 @@ of [`history-collector.py`](history-collector.py "History Collector Script"),
 defaulting to `$HOME/bin/history-collector.py`.
 
 Notes:
+- For this to work, you need to install the `daemon` program. On variants of
+  Ubuntu, you can do this with `sudo apt-get install daemon`.
+- It might also be helpful to install `rlwrap` for line editing.
 - [`history-collector.py`](history-collector.py "History Collector Script")
   isn't meant to be used directly!
 - The `oops` function assumes that no history updates take place while you are
