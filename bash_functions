@@ -193,6 +193,32 @@ scd() {
 }
 
 
+#lazy cd one directory at a time until failure
+
+lcd() {
+  local path="$1"
+  local here="$(pwd)"
+  local IFS='/'
+  local components=($path)
+  unset IFS
+  for component in "${components[@]}"; do
+    if [ -z "$component" ]; then
+      cd '/'
+      echo "-> /" 1>&2
+    else
+      if cd "$component" 2> /dev/null; then
+        echo "-> $component" 1>&2
+      else
+        break
+      fi
+    fi
+  done
+  #(makes sure last directory is accurate)
+  cd "$here"
+  cd ~-
+}
+
+
 #cd upward to component, added 20160205
 
 cdto() {
@@ -228,9 +254,10 @@ follow() {
         break
       fi
     fi
-    local next="$(ls -d */ 2> /dev/null | head -1)"
+    local next="$(ls -d */ 2> /dev/null | head -1 | sed 's@/$@@')"
     [ "$next" ] || break
     cd "$next"
+    echo "-> $next" 1>&2
   done
   #(makes sure last directory is accurate)
   cd "$here"
