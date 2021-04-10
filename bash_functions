@@ -62,11 +62,15 @@ _hist_choose() {
     lines=( $("$1" "$2" | egrep -vf <(_print_string "$_select_filters") | head $take) )
     unset IFS
     echo -n "$_content_color" 1>&2
-    select cmd in "${lines[@]}"; do
+    [ "${#lines[@]}" -gt 0 ] && select cmd in "${lines[@]}"; do
       _print_string "$cmd"
       break
     done )
-  _read_line 'edit: ' "$line"
+  if [ -z "$line" ]; then
+    echo "no matches found" 1>&2
+  else
+    _read_line 'edit: ' "$line"
+  fi
 }
 
 _hist_sel() {
@@ -426,7 +430,12 @@ use_history_collector() {
   [ "$HISTORY_COLLECTOR" ] || HISTORY_COLLECTOR="$HOME/bin/history-collector.py"
   _check_history_commands || return 1
   for command in '_start_history_daemon' '_write_history'; do
-    echo "$PROMPT_COMMAND" | fgrep -q "$command" || PROMPT_COMMAND+="$command;"
+    if ! echo "$PROMPT_COMMAND" | fgrep -q "$command"; then
+      if [ -n "$PROMPT_COMMAND" ]; then
+        PROMPT_COMMAND+=';'
+      fi
+      PROMPT_COMMAND+="$command"
+    fi
   done
 
   #override from above
