@@ -19,11 +19,27 @@ be available for use.
 
 ### History Functions
 
-These functions filter, alter, and/or reexecute commands from the command
-history. **Note that since history lines are enumerated for the purposes of
-matching and filtering, `^` won't match the beginning of a command. Use
-`${HPREFIX}` where you would otherwise use `^` in a pattern to indicate the
-beginning of a line, e.g., `"(${HPREFIX}| )echo "` instead of `'(^| )echo '`.**
+Command history can be searched and shared across terminals. There are a few
+requirements to enable this functionality.
+
+1. Make sure that the [`sqlite3`](https://www.sqlite.org/index.html) CLI is
+   installed and is in your `$PATH`.
+1. *(Optional)* Install `pcre` for `sqlite3`. On Linux, this might be in a
+   package named `sqlite3-pcre`. If the installed path *isn't*
+   `/usr/lib/sqlite3/pcre.so` then `export` `SQLITE3_REGEX_LIB` with the
+   absolute path in `.bashrc`. (This will enable regexes in history search. The
+   default otherwise will be glob searches.)
+1. *(Optional)* Put `history-collector.sh` in `$HOME/bin`, or create a symlink.
+1. Call `use_history_collector` in `.bashrc`. If `history-collector.sh` *isn't*
+   in `$HOME/bin` then pass the absolute path to `use_history_collector`.
+
+ in `.bashrc` after the applicable `export`s
+   above.
+
+Non-shared versions of the functions below will be available without the steps
+above, but it might be buggy. (If you use the default (non-shared) history
+functions, use `$HPREFIX` instead of `^` to indicate the beginning of a line in
+search regexes.)
 
 #### Filter Command History: `hgrep` *`[regex]`*
 Filter shell command history using an extended regular expression. Sorts by
@@ -115,40 +131,12 @@ bash$ echo123
 echo123: command not found
 bash$ echo456
 echo456: command not found
-bash$ oops "${HPREFIX}echo[^ ]"
+bash$ oops "echo[^ ]"
 echo123
 echo456
 Press [Enter] to proceed...
 Deleting...
 ```
-
-#### Sharing History
-
-The [`history-collector.py`](history-collector.py "History Collector Script")
-script manages history between multiple concurrent sessions. This sharing only
-applies to the history functions in this project. To enable history sharing,
-call `use_history_collector (script)`, where `(script)` is an optional location
-of [`history-collector.py`](history-collector.py "History Collector Script"),
-defaulting to `$HOME/bin/history-collector.py`.
-
-Notes:
-- For this to work, you need to install the `daemon` program. On variants of
-  Ubuntu, you can do this with `sudo apt-get install daemon`.
-- It might also be helpful to install `rlwrap` for line editing.
-- [`history-collector.py`](history-collector.py "History Collector Script")
-  isn't meant to be used directly!
-- The `oops` function assumes that no history updates take place while you are
-  examining the line(s) to delete.
-- The history collector daemon is single-threaded, but that shouldn't matter
-  unless a bug prevents it from completing a request.
-- History data is saved in `$HOME/.hc_history`, and can be saved/restored for
-  the current session with `save_history` and `restore_history`, respectively.
-- Unfortunately, updates to the shared history are delayed by one command, due
-  to the limited configurability of `bash`.
-- When enabled, history collection will periodically call `history -a ...`,
-  which will "steal" history from the current session. This doesn't affect the
-  session's history (accessed via the up key and `history`); however, it might
-  prevent it from getting saved to `.bash_history`.
 
 ### Directory Functions
 

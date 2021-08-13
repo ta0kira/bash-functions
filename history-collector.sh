@@ -70,6 +70,7 @@ handle_insert() {
   fi
   local command=$(escape "$1")
   local last_use=$(date +%s)
+  init_history
   try_insert "$command" "$last_use" || try_update "$command" "$last_use"
 }
 
@@ -78,7 +79,11 @@ handle_search() {
     echo "$0 search [limit] \"pattern\"" 1>&2
     exit 1
   fi
-  local limit=${1:-10}
+  if [[ "$1" ]]; then
+    local limit="LIMIT $1"
+  else
+    local limit=''
+  fi
   local pattern=$(escape "$2")
   if [[ -r "$SQLITE3_REGEX_LIB" ]]; then
     exec_history -cmd ".load $SQLITE3_REGEX_LIB" <<END
@@ -86,7 +91,7 @@ handle_search() {
       FROM $table_name
       WHERE Command REGEXP '$pattern'
       ORDER BY Rank DESC
-      LIMIT $limit;
+      $limit;
 END
   else
     exec_history <<END
@@ -94,9 +99,9 @@ END
       FROM $table_name
       WHERE Command GLOB '$pattern'
       ORDER BY Rank DESC
-      LIMIT $limit;
+      $limit;
 END
-  fi #| cut -d'|' -f 2-
+  fi | cut -d'|' -f 2-
 }
 
 handle_delete() {

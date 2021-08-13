@@ -1,5 +1,3 @@
-#helper functions to search, edit, and execute history, updated 20150410
-
 _select_filters=$(printf '%s\n' {,f}h{grep,choose,sel,echo,freq})
 HPREFIX='^ *[0-9]+ +'
 
@@ -121,8 +119,6 @@ hecho() {
 }
 
 
-#'cd' shortcut added 20131214
-
 ncd() {
   [ $# -eq 0 ] && return 0
 
@@ -154,14 +150,10 @@ ncd() {
 }
 
 
-#directory expansion based on 'ncd' added 20140709
-
 ndir() {
   ( ncd "$@" && builtin pwd )
 }
 
-
-#iterated upward directory traversal, added 20150303
 
 ucd() {
   local count=$1
@@ -179,15 +171,11 @@ ucd() {
 }
 
 
-#incremental cd, added 20150721
-
 icd() {
   local previous="$OLDPWD"
   cd "$@" && OLDPWD="$previous"
 }
 
-
-#substitution cd, added 20150925
 
 scd() {
   local old="$1"
@@ -223,8 +211,6 @@ lcd() {
 }
 
 
-#cd upward to component, added 20160205
-
 cdto() {
   local basename="$1"
   if [ ! "$basename" ]; then
@@ -243,8 +229,6 @@ cdto() {
   cd "${path_all[*]}"
 }
 
-
-#follow chain of directory-with-1-subdirectory, added 20150228
 
 follow() {
   local here="$(pwd)"
@@ -272,8 +256,6 @@ follow() {
   fi
 }
 
-
-#find a relative path, added 20140717
 
 _fix_path() {
   local IFS='/'
@@ -339,8 +321,6 @@ relpath() {
 }
 
 
-#process all but the top line of input, updated 20150410
-
 skiphead() {
   local IFS=$'\n'
   read -r h && _print_string "$h"
@@ -348,8 +328,6 @@ skiphead() {
   "$@"
 }
 
-
-#remove commands from history, updated 20150410
 
 oops() {
   local unset IFS
@@ -392,44 +370,27 @@ oops() {
 }
 
 
-#added 20150228
-
 mute() {
   "$@" 2> /dev/null
 }
 
 
-#shared history, added 20160617
-
 _check_history_commands() {
+  if [ ! -x "$(which sqlite3 2> /dev/null)" ]; then
+    echo 'sqlite3 is not executable.' 1>&2
+    return 1
+  fi
   if [ ! -x "$HISTORY_COLLECTOR" ]; then
     echo "$HISTORY_COLLECTOR is not executable." 1>&2
     return 1
   fi
-  if [ ! -x "$(which daemon)" ]; then
-    echo "daemon command is not executable." 1>&2
-    return 1
-  fi
-}
-
-_start_history_daemon() {
-  if [ -z "$HISTORY_COLLECTOR" ]; then
-    echo "History Collector not configured; call use_common_history." 1>&2
-    return 1
-  fi
-  _check_history_commands || return 1
-  daemon -F "$HOME/.history-collector.pid" -- "$HISTORY_COLLECTOR" --mode=daemon
-  while ! [ -S "$HOME/.hc_ipc" ]; do
-    echo -en 'Waiting for history-collector.py...\r' 1>&2
-    sleep 1
-  done
 }
 
 use_history_collector() {
   HISTORY_COLLECTOR=$1
-  [ "$HISTORY_COLLECTOR" ] || HISTORY_COLLECTOR="$HOME/bin/history-collector.py"
+  [ "$HISTORY_COLLECTOR" ] || HISTORY_COLLECTOR="$HOME/bin/history-collector.sh"
   _check_history_commands || return 1
-  for command in '_start_history_daemon' '_write_history'; do
+  for command in '_write_history'; do
     if ! echo "$PROMPT_COMMAND" | fgrep -q "$command"; then
       if [ -n "$PROMPT_COMMAND" ]; then
         PROMPT_COMMAND+=';'
@@ -441,43 +402,38 @@ use_history_collector() {
   #override from above
   HPREFIX='^'
 
-  _hist_unsorted() {
-    cut -d: -f2-
-  }
-
   #override from above
   hgrep() {
-    _hist_grep "$1" _hist_unsorted
+    "$HISTORY_COLLECTOR" search '' "$1"
   }
 
   #override from above
   _clean_history() {
-    _start_history_daemon && _read_history "$@"
+    "$HISTORY_COLLECTOR" search '' "$1"
   }
 
   #override from above
   _delete_history() {
-    printf '%s\n' "$@" | "$HISTORY_COLLECTOR" --mode=delete
+    local command
+    for command in "$@"; do
+      "$HISTORY_COLLECTOR" delete "$command"
+    done
   }
 
   #override from above
   _last_line() {
-    "$HISTORY_COLLECTOR" --mode=last < /dev/null
+    echo "$LAST_HISTORY_COMMAND"
+  }
+
+  _insert_history() {
+    local command
+    while read command; do
+      LAST_HISTORY_COMMAND=$command
+      "$HISTORY_COLLECTOR" insert "$LAST_HISTORY_COMMAND"
+    done
   }
 
   _write_history() {
-    history -a >(egrep -vx '#[0-9]+' | "$HISTORY_COLLECTOR" --mode=write)
-  }
-
-  _read_history() {
-    printf '%s\n' "$@" | "$HISTORY_COLLECTOR" --mode=read
-  }
-
-  save_history() {
-    echo "$1" | "$HISTORY_COLLECTOR" --mode=save
-  }
-
-  restore_history() {
-    echo "$1" | "$HISTORY_COLLECTOR" --mode=restore
+    history -a /dev/stdout | egrep -vx '#[0-9]+' | _insert_history
   }
 }
