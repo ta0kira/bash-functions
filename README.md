@@ -1,10 +1,11 @@
 # Functions and Scripts for Interactive Bash Sessions
-###### [Kevin P. Barry][1], Last Updated 12 July 2016
 
 This project includes several shell functions and scripts that I've found
 extremely useful while doing a lot of work from a terminal. For the most part,
 they're meant to cut down on repetition when dealing with command history and
 renaming files.
+
+These functions require `bash` 4.0 or later.
 
 ## Bash Functions from .bash_functions
 To use, copy [`bash_functions`](bash_functions "Bash Functions") to `~` and
@@ -266,5 +267,3 @@ bash$ ls fake
 ls: cannot access fake: No such file or directory
 bash$ mute ls fake
 ```
-
-  [1]: mailto:kevinbarry@google.com
