@@ -109,7 +109,7 @@ handle_delete() {
     echo "$0 delete \"command\"" 1>&2
     exit 1
   fi
-  local command=$(printf "%q" "$1")
+  local command=$(escape "$1")
   exec_history <<END
     DELETE FROM $table_name
     WHERE $command_col = '$command';

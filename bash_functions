@@ -38,10 +38,12 @@ _last_line() {
   _clean_history | tail -1
 }
 
-_delete_history() {
-  for l in $lines; do
-    history -d $l || break
-  done
+_delete_commands() {
+  :
+}
+
+_delete_last_command() {
+  :
 }
 
 _hist_grep() {
@@ -98,8 +100,12 @@ _hist_echo() {
   fi
 }
 
+_tac() {
+  sed '1!G;h;$!d'
+}
+
 _hist_by_recency() {
-  sort -t: -k2,2 -su | sort -t: -k1,1 -sg | cut -d: -f2- | tac
+  sort -t: -k2,2 -su | sort -t: -k1,1 -sg | cut -d: -f2- | _tac
 }
 
 hgrep() {
@@ -332,12 +338,14 @@ skiphead() {
 oops() {
   local unset IFS
   history -d $((HISTCMD-1))
+  history -d $((HISTCMD-1))
   if [ ! "$1" ]; then
     read -r _cmd_num line < <(_last_line)
     #(remove current command upon [Ctrl]+C)
-    trap '_delete_history $_cmd_num; trap SIGINT; return' SIGINT
+    trap '_delete_last_command; trap SIGINT; return' SIGINT
     line2=$(_read_line 'edit: ' "$line")
     if [ $? -eq 0 ]; then
+      _delete_last_command
       trap SIGINT
       history -s "$line2"
       eval "$line2"
@@ -345,15 +353,11 @@ oops() {
     trap SIGINT
     return $?
   else
-    local line_data=$(_clean_history "$1")
-    local lines=$(
-      _print_string "$line_data" | while read -r n line; do
-        echo "$n"
-      done | tac
-    )
-    if [ "$lines" ]; then
+    local IFS=$'\n'
+    local lines=($(hgrep "$1"))
+    if [ "${lines[*]}" ]; then
       echo -n "$_content_color" 1>&2
-      _print_string "$line_data" | while read -r n line; do
+      for line in "${lines[@]}"; do
         _print_string "$line"
       done | sort | uniq -c | sort -gr | ${PAGER-less} 1>&2
       echo -n "$_prompt_color" 1>&2
@@ -363,10 +367,10 @@ oops() {
         return 1
       else
         echo "Deleting..." 1>&2
+        _delete_commands "${lines[@]}"
       fi
     fi
   fi
-  _delete_history $lines
 }
 
 
@@ -413,27 +417,32 @@ use_history_collector() {
   }
 
   #override from above
-  _delete_history() {
-    local command
+  _delete_last_command() {
+    "$HISTORY_COLLECTOR" delete "$LAST_HISTORY_COMMAND"
+    LAST_HISTORY_COMMAND=
+  }
+
+  #override from above
+  _last_line() {
+    echo "$((HISTCMD-1)) $LAST_HISTORY_COMMAND"
+  }
+
+  #override from above
+  _delete_commands() {
     for command in "$@"; do
       "$HISTORY_COLLECTOR" delete "$command"
     done
   }
 
-  #override from above
-  _last_line() {
-    echo "$LAST_HISTORY_COMMAND"
-  }
-
   _insert_history() {
     local command
     while read command; do
-      LAST_HISTORY_COMMAND=$command
-      "$HISTORY_COLLECTOR" insert "$LAST_HISTORY_COMMAND"
+      "$HISTORY_COLLECTOR" insert "$command"
     done
   }
 
   _write_history() {
-    history -a /dev/stdout | egrep -vx '#[0-9]+' | sed '$!d' | _insert_history
+    LAST_HISTORY_COMMAND=$(history -a /dev/stdout | egrep -vx '#[0-9]+' | sed '$!d')
+    "$HISTORY_COLLECTOR" insert "$LAST_HISTORY_COMMAND"
   }
 }
