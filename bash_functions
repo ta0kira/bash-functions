@@ -434,6 +434,6 @@ use_history_collector() {
   }
 
   _write_history() {
-    history -a /dev/stdout | egrep -vx '#[0-9]+' | _insert_history
+    history -a /dev/stdout | egrep -vx '#[0-9]+' | sed '$!d' | _insert_history
   }
 }
