@@ -267,3 +267,21 @@ bash$ ls fake
 ls: cannot access fake: No such file or directory
 bash$ mute ls fake
 ```
+
+## Bulk Filename Operations
+
+- **`pattern-rename.sh [old pattern] [new text] [files...]`**. Performs a regex
+  substitution on the provided filenames and performs a `mv` operation.
+- **`pattern-copy.sh [old pattern] [new text] [files...]`**. The same as
+  `pattern-rename.sh`, but uses `cp`.
+- **`pattern-link.sh [old pattern] [new text] [files...]`**. The same as
+  `pattern-rename.sh`, but uses `ln -s`.
+
+You can also set the `$RENAME_CMD` environment variable to modify the behavior
+of any of the scripts above. One call will be made to the command for each pair
+of old/new filenames *only if they differ*.
+
+```shell
+# Change file extension .c -> .cpp for source files in a git repo.
+RENAME_CMD='git mv' pattern-rename.sh '\.c$' '.cpp' *.c
+```
