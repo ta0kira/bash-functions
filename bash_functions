@@ -4,7 +4,19 @@ HPREFIX='^ *[0-9]+ +'
 _content_color=$'\033[0;33m'
 _edit_color=$'\033[0;31m'
 _prompt_color=$'\033[0;37;0m'
-_execute_color=$_prompt_color
+
+_guess_term_color() {
+  echo "$PS1" | egrep -o '\\[\\[0-9]+\[[0-9;]+m\\]' | sed -r '$!d;s/^\\\[(.+)\\\]$/\1/'
+}
+
+_reset_term_color() {
+  local color=$(_guess_term_color)
+  if [[ "$color" ]]; then
+    echo -n -e "$color" 1>&2
+  else
+    echo -n "$_prompt_color" 1>&2
+  fi
+}
 
 _read_line() {
   local prompt="$1"
@@ -13,10 +25,10 @@ _read_line() {
   if [ -x "$(which rlwrap)" ]; then
     local color_prompt="$_prompt_color$prompt$_edit_color"
     final_text=$(rlwrap -o -P "$initialial_text" bash -c "echo -n '$color_prompt' 1>&2; cat")
-    echo -n "$_execute_color" 1>&2
   else
     read -e -r -p "$prompt" -i "$initialial_text" final_text
   fi && _print_string "$final_text"
+  _reset_term_color
 }
 
 #(used in place of 'echo' in case an argument happens to be "-e", etc.)
@@ -65,10 +77,12 @@ _hist_choose() {
     [ "${#lines[@]}" -gt 0 ] && select cmd in "${lines[@]}"; do
       _print_string "$cmd"
       break
-    done )
+    done)
   if [ -z "$line" ]; then
     echo "no matches found" 1>&2
+    _reset_term_color
   else
+    _reset_term_color
     _read_line 'edit: ' "$line"
   fi
 }
@@ -79,17 +93,16 @@ _hist_sel() {
   local _cmd_num=$((HISTCMD-1))
   #(remove current command upon [Ctrl]+C)
   trap 'history -d $_cmd_num; trap SIGINT; return' SIGINT
-  line=$("$choose" "$@")
+  local line=$("$choose" "$@")
   #(pop handler)
   trap SIGINT
-  if [ $? -eq 0 ]; then
-    [ "$line" ] && history -s "$line"
+  if [ "$line" ]; then
+    history -s "$line"
     eval "$line"
   else
-    history -d $((HISTCMD-1))
+    history -d $_cmd_num
   fi
 }
-
 
 _hist_echo() {
   local choose="$1"
@@ -362,6 +375,7 @@ oops() {
       done | sort | uniq -c | sort -gr | ${PAGER-less} 1>&2
       echo -n "$_prompt_color" 1>&2
       IFS=' ' read -p 'Press [Enter] to proceed...' -N1 -d' ' q
+      _reset_term_color
       if [ "$q" != $'\n' ]; then
         echo "Canceled" 1>&2
         return 1
