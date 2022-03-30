@@ -1,12 +1,12 @@
-_hide_commands=(h{grep,sel,echo})
+_hide_commands=(h{grep,sel,echo} oops)
 _select_filters=$(printf '%s\n' "${_hide_commands[@]}")
 HPREFIX='^ *[0-9]+ +'
 
 for _temp_cmd in "${_hide_commands[@]}"; do
   if [[ -z "${HISTIGNORE-}" ]]; then
-    HISTIGNORE="$_temp_cmd *"
+    HISTIGNORE="$_temp_cmd:$_temp_cmd *"
   elif ! echo "$HISTIGNORE" | egrep -q "(^|:)$_temp_cmd "; then
-    HISTIGNORE="$HISTIGNORE:$_temp_cmd *"
+    HISTIGNORE="$HISTIGNORE:$_temp_cmd:$_temp_cmd *"
   fi
 done
 unset _temp_cmd
@@ -355,9 +355,8 @@ skiphead() {
 
 oops() {
   local unset IFS
-  history -d $((HISTCMD-1))
-  history -d $((HISTCMD-1))
   if [ ! "$1" ]; then
+    history -d $((HISTCMD-1))
     read -r _cmd_num line < <(_last_line)
     #(remove current command upon [Ctrl]+C)
     trap '_delete_last_command; trap SIGINT; return' SIGINT
