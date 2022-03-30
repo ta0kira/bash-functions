@@ -91,6 +91,7 @@ _hist_sel() {
   local choose="$1"
   shift
   local _cmd_num=$((HISTCMD-1))
+  history -d $HISTCMD
   #(remove current command upon [Ctrl]+C)
   trap 'history -d $_cmd_num; trap SIGINT; return' SIGINT
   local line=$("$choose" "$@")
