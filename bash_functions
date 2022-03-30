@@ -1,5 +1,15 @@
-_select_filters=$(printf '%s\n' {,f}h{grep,choose,sel,echo,freq})
+_hide_commands=(h{grep,sel,echo})
+_select_filters=$(printf '%s\n' "${_hide_commands[@]}")
 HPREFIX='^ *[0-9]+ +'
+
+for _temp_cmd in "${_hide_commands[@]}"; do
+  if [[ -z "${HISTIGNORE-}" ]]; then
+    HISTIGNORE="$_temp_cmd *"
+  elif ! echo "$HISTIGNORE" | egrep -q "(^|:)$_temp_cmd "; then
+    HISTIGNORE="$HISTIGNORE:$_temp_cmd *"
+  fi
+done
+unset _temp_cmd
 
 _content_color=$'\033[0;33m'
 _edit_color=$'\033[0;31m'
@@ -90,18 +100,12 @@ _hist_choose() {
 _hist_sel() {
   local choose="$1"
   shift
-  local _cmd_num=$((HISTCMD-1))
-  history -d $HISTCMD
-  #(remove current command upon [Ctrl]+C)
-  trap 'history -d $_cmd_num; trap SIGINT; return' SIGINT
   local line=$("$choose" "$@")
   #(pop handler)
   trap SIGINT
   if [ "$line" ]; then
     history -s "$line"
     eval "$line"
-  else
-    history -d $_cmd_num
   fi
 }
 
