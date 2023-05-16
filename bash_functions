@@ -1,6 +1,7 @@
 _hide_commands=(h{grep,sel,echo} oops)
 _select_filters=$(printf '%s\n' "${_hide_commands[@]}")
 HPREFIX='^ *[0-9]+ +'
+OOPS_HIST_OFFSET=${OOPS_HIST_OFFSET:-1}
 
 for _temp_cmd in "${_hide_commands[@]}"; do
   if [[ -z "${HISTIGNORE-}" ]]; then
@@ -356,7 +357,7 @@ skiphead() {
 oops() {
   local unset IFS
   if [ ! "$1" ]; then
-    history -d $((HISTCMD-1))
+    history -d $((HISTCMD-OOPS_HIST_OFFSET))
     read -r _cmd_num line < <(_last_line)
     #(remove current command upon [Ctrl]+C)
     trap '_delete_last_command; trap SIGINT; return' SIGINT
