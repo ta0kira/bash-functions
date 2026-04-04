@@ -190,7 +190,7 @@ directory with a long path a few components at a time, or if you want to `cd`
 somewhere without overwriting `~-`.
 
 ```bash
-bash:/$ icd /home 
+bash:/$ icd /home
 bash:/home$ icd me
 bash:~$ cd ~- && pwd
 /
@@ -210,6 +210,20 @@ bash:/there/are/too/many/paths$ ucd 3 && pwd
 bash:/there/are/too/many/paths$ ucd -3 && pwd
 /there/are/too
 ```
+
+#### Switch To a Directory Using First Characters: `fcd` *`[letters](:n)`* ...
+`cd` using a pattern of first characters in the words (separated by `-` or `_`)
+of a directory name. For example, `some-dir-name` can be matched with `fcd sdn`.
+If there are multiple matches, you can suffix the pattern with `:n`, e.g.,
+`fcd sdn:2`.
+
+```bash
+bash:/$ fcd h mu && pwd
+/home/my-username
+```
+
+Directories are matched one at a time, and so traversal could fail after partial
+traversal.
 
 #### Switch Directories to a Parallel Branch: `scd` *`[old]`* *`[new]`*
 `cd` to `pwd` after making a text substitution in that path. This is useful if

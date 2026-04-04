@@ -175,6 +175,28 @@ ncd() {
 }
 
 
+fcd() {
+  local oldpwd=$PWD
+  local error=0
+  for d in "$@"; do
+    local num=$(echo "$d" | cut -d: -f2 -s)
+    [[ "$num" ]] || num=1
+    local parts=$(echo "$d" | cut -d: -f 1,1 | sed 's/./&\n/g' | sed '$d' | sed 's/./&[^-_]*/' | sed '$!s/.$/&[-_]/' | tr -d $'\n')
+    local dir=$(ls -d */ | sed 's@/$@@' | egrep -xf <(echo "$parts") | sed "$num!d")
+    if [[ "$dir" ]]; then
+      echo "$dir" 1>&2
+      cd "$dir"
+    else
+      echo "no match found for '$parts'" 1>&2
+      error=1
+      break
+    fi
+  done
+  OLDPWD=$oldpwd
+  return $error
+}
+
+
 ndir() {
   ( ncd "$@" && builtin pwd )
 }
