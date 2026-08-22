@@ -482,6 +482,7 @@ use_history_collector() {
 
   #override from above
   _delete_commands() {
+    local command
     for command in "$@"; do
       "$HISTORY_COLLECTOR" delete "$command"
     done
