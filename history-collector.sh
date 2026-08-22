@@ -18,6 +18,7 @@ command_col=Command
 count_col=UseCount
 last_col=LastUse
 usage_weight=300
+default_recent=1000
 
 exec_history() {
   cat | sqlite3 "$@" "$HISTORY_COLLECTOR_FILE" 2> /dev/null
@@ -116,6 +117,16 @@ handle_delete() {
 END
 }
 
+handle_recent() {
+  local count=${1-$default_recent}
+  exec_history <<END
+      SELECT $command_col
+      FROM $table_name
+      ORDER BY $last_col DESC
+      LIMIT $count;
+END
+}
+
 case "$command" in
   insert)
     handle_insert "$@"
@@ -125,6 +136,9 @@ case "$command" in
   ;;
   delete)
     handle_delete "$@"
+  ;;
+  recent)
+    handle_recent "$@"
   ;;
   *)
     echo "$0 [command] (args...)" 1>&2
