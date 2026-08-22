@@ -118,7 +118,7 @@ END
 }
 
 handle_recent() {
-  local count=${1-$default_recent}
+  local count=${1:-$default_recent}
   exec_history <<END
       SELECT $command_col
       FROM $table_name
