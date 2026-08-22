@@ -431,8 +431,18 @@ _check_history_commands() {
   fi
 }
 
+_replace_history_with_recent() {
+  history -c
+  local command
+  while read command; do
+    history -s "$command"
+  done < <($HISTORY_COLLECTOR recent "$1" | tac)
+  HISTFILE=
+}
+
 use_history_collector() {
-  HISTORY_COLLECTOR=$1
+  HISTORY_COLLECTOR=${1-}
+  local recent_count=${2-1000}
   [ "$HISTORY_COLLECTOR" ] || HISTORY_COLLECTOR="$HOME/bin/history-collector.sh"
   _check_history_commands || return 1
   for command in '_write_history'; do
@@ -443,6 +453,8 @@ use_history_collector() {
       PROMPT_COMMAND+="$command"
     fi
   done
+
+  _replace_history_with_recent "$recent_count"
 
   #override from above
   HPREFIX='^'

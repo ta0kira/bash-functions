@@ -32,10 +32,18 @@ requirements to enable this functionality.
    default otherwise will be glob searches.)
 1. *(Optional)* Put `history-collector.sh` in `$HOME/bin`, or create a symlink.
 1. Call `use_history_collector` in `.bashrc`. If `history-collector.sh` *isn't*
-   in `$HOME/bin` then pass the absolute path to `use_history_collector`.
+   in `$HOME/bin` then pass the absolute path to `use_history_collector`. in
+   `.bashrc` after the applicable `export`s above.
 
- in `.bashrc` after the applicable `export`s
-   above.
+   **`use_history_collector` will initialize the shell history with recent
+   commands recorded by the history collector.** The default count is 1000,
+   which can be overridden by passing a count as the second argument, using `''`
+   as a placeholder for the first if you don't want to override the history
+   collector path.
+
+   ```shell
+   use_history_collector '' 100
+   ```
 
 Non-shared versions of the functions below will be available without the steps
 above, but it might be buggy. (If you use the default (non-shared) history
