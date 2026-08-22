@@ -436,7 +436,7 @@ _replace_history_with_recent() {
   local command
   while read command; do
     history -s "$command"
-  done < <($HISTORY_COLLECTOR recent "$1" | tac)
+  done < <("$HISTORY_COLLECTOR" recent "$1" | tac)
   HISTFILE=
 }
 
